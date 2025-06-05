@@ -1,207 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Moroccan Heritage AR</title>
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+<html>
+  <head>
+    <title>Hassan Tower AR</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- A-Frame and AR.js -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.2.1/aframe/build/aframe-ar.min.js"></script>
+
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: Arial, sans-serif;
-        }
-        .arjs-loader {
-            height: 100%;
-            width: 100%;
-            position: absolute;
-            top: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
-        .ar-info-panel {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 15px;
-            border-radius: 10px;
-            max-width: 300px;
-            width: 90%;
-            border: 2px solid #F1B82D;
-            display: none;
-            z-index: 1000;
-        }
-        .model-controls {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-        }
-        .control-btn {
-            background: #1E4E7A;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            font-size: 20px;
-            margin: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
+      body { margin: 0; overflow: hidden; }
     </style>
-</head>
-<body>
-    <div class="arjs-loader">
-        <div>Loading AR experience, please wait...</div>
-    </div>
+  </head>
 
-    <div class="model-controls">
-        <button class="control-btn" id="rotateBtn">↻</button>
-        <button class="control-btn" id="scaleUpBtn">+</button>
-        <button class="control-btn" id="scaleDownBtn">-</button>
-    </div>
+  <body>
+    <a-scene
+      embedded
+      arjs="sourceType: webcam; debugUIEnabled: false;"
+      renderer="logarithmicDepthBuffer: true;"
+    >
+      <!-- AR Marker from GitHub repo -->
+      <a-marker
+        type="pattern"
+        url="https://raw.githubusercontent.com/OrderDanie/Touristic_data/main/pattern-hassan_marker_square.patt"
+      >
+        <!-- 3D Model of Hassan Tower -->
+        <a-entity
+          gltf-model="https://raw.githubusercontent.com/OrderDanie/Touristic_data/main/hassan_tower%20(1).glb"
+          scale="0.1 0.1 0.1"
+          position="0 0 0"
+          rotation="0 0 0"
+        ></a-entity>
+      </a-marker>
 
-    <div class="ar-info-panel" id="infoPanel">
-        <h3 id="siteTitle">Historical Site</h3>
-        <p id="siteDescription">Loading information...</p>
-        <button onclick="hideInfoPanel()" style="background: #C1272D; color: white; border: none; padding: 8px 15px; border-radius: 5px; margin-top: 10px;">Close</button>
-    </div>
-
-    <a-scene vr-mode-ui="enabled: false" embedded arjs="sourceType: webcam; debugUIEnabled: false;" renderer="logarithmicDepthBuffer: true;">
-        
-        <!-- Hassan Tower Marker with 3D Model -->
-        <a-marker preset="hiro" id="marker-hassan">
-            <a-entity 
-                gltf-model="https://cdn.glitch.global/7d5a5e3f-18a5-4a13-b7a7-6d60a5e6d3a5/hassan_tower.glb?v=1678912345678"
-                scale="0.5 0.5 0.5"
-                position="0 0.5 0"
-                rotation="0 0 0"
-                id="hassan-model"
-                animation="property: rotation; to: 0 360 0; loop: true; dur: 10000; easing: linear">
-                <a-text value="Hassan Tower" color="#F1B82D" align="center" position="0 2 0" scale="2 2 2"></a-text>
-            </a-entity>
-        </a-marker>
-
-        <!-- Chellah Marker with 3D Model -->
-        <a-marker type="pattern" url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/patt.kanji" id="marker-chellah">
-            <a-entity 
-                gltf-model="https://cdn.glitch.global/7d5a5e3f-18a5-4a13-b7a7-6d60a5e6d3a5/chellah.glb?v=1678912456789"
-                scale="0.3 0.3 0.3"
-                position="0 0.5 0"
-                rotation="0 180 0"
-                id="chellah-model">
-                <a-text value="Chellah Necropolis" color="#F1B82D" align="center" position="0 2 0" scale="2 2 2"></a-text>
-            </a-entity>
-        </a-marker>
-
-        <!-- Kasbah Marker with 3D Model -->
-        <a-marker type="pattern" url="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/data/patt.kanji2" id="marker-kasbah">
-            <a-entity 
-                gltf-model="https://cdn.glitch.global/7d5a5e3f-18a5-4a13-b7a7-6d60a5e6d3a5/kasbah.glb?v=1678912567890"
-                scale="0.4 0.4 0.4"
-                position="0 0.5 0"
-                rotation="0 180 0"
-                id="kasbah-model">
-                <a-text value="Kasbah of the Udayas" color="#F1B82D" align="center" position="0 2 0" scale="2 2 2"></a-text>
-            </a-entity>
-        </a-marker>
-
-        <a-entity camera></a-entity>
+      <!-- AR camera -->
+      <a-entity camera></a-entity>
     </a-scene>
-
-    <script>
-        // Historical sites data
-        const historicalSites = {
-            "hassan": {
-                name: "Hassan Tower",
-                description: "The iconic minaret of an incomplete mosque in Rabat, construction began in 1195 under Sultan Yacoub al-Mansour. The tower stands 44 meters tall and features intricate Moorish architectural details.",
-                model: "hassan-model",
-                scale: 0.5
-            },
-            "chellah": {
-                name: "Chellah Necropolis",
-                description: "A medieval fortified Muslim necropolis in Rabat, built over ancient Roman ruins. Features beautiful Islamic architecture and gardens, with storks nesting on its ancient walls.",
-                model: "chellah-model",
-                scale: 0.3
-            },
-            "kasbah": {
-                name: "Kasbah of the Udayas",
-                description: "A 12th-century fortress with blue-and-white walls overlooking the Atlantic. The kasbah features Andalusian gardens and is one of Rabat's most picturesque sites.",
-                model: "kasbah-model",
-                scale: 0.4
-            }
-        };
-
-        // Current active model
-        let currentModel = null;
-        let currentRotation = 0;
-        const rotationIncrement = 90;
-
-        // Initialize
-        document.querySelector('a-scene').addEventListener('loaded', function() {
-            document.querySelector('.arjs-loader').style.display = 'none';
-            
-            // Set up event listeners for model controls
-            document.getElementById('rotateBtn').addEventListener('click', rotateModel);
-            document.getElementById('scaleUpBtn').addEventListener('click', () => scaleModel(1.1));
-            document.getElementById('scaleDownBtn').addEventListener('click', () => scaleModel(0.9));
-        });
-
-        // Marker detection handlers
-        document.querySelector('a-scene').addEventListener('markerFound', function(e) {
-            const markerId = e.target.id;
-            if (markerId === 'marker-hassan') showModelInfo('hassan');
-            if (markerId === 'marker-chellah') showModelInfo('chellah');
-            if (markerId === 'marker-kasbah') showModelInfo('kasbah');
-        });
-
-        document.querySelector('a-scene').addEventListener('markerLost', function(e) {
-            hideInfoPanel();
-            currentModel = null;
-        });
-
-        // Show information about the model
-        function showModelInfo(siteId) {
-            const site = historicalSites[siteId];
-            if (!site) return;
-            
-            currentModel = document.getElementById(site.model);
-            document.getElementById('siteTitle').textContent = site.name;
-            document.getElementById('siteDescription').textContent = site.description;
-            document.getElementById('infoPanel').style.display = 'block';
-        }
-
-        // Hide information panel
-        function hideInfoPanel() {
-            document.getElementById('infoPanel').style.display = 'none';
-        }
-
-        // Rotate the current model
-        function rotateModel() {
-            if (!currentModel) return;
-            currentRotation += rotationIncrement;
-            currentModel.setAttribute('rotation', `0 ${currentRotation} 0`);
-        }
-
-        // Scale the current model
-        function scaleModel(factor) {
-            if (!currentModel) return;
-            const currentScale = currentModel.getAttribute('scale');
-            const newScale = {
-                x: currentScale.x * factor,
-                y: currentScale.y * factor,
-                z: currentScale.z * factor
-            };
-            currentModel.setAttribute('scale', newScale);
-        }
-    </script>
-</body>
+  </body>
 </html>
