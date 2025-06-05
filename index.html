@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Moroccan Heritage AR Guide</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/jeromeetienne/AR.js/2.2.0/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsfeat@0.0.8/build/jsfeat.min.js"></script>
+    <style>
+        :root {
+            --moroccan-blue: #1E4E7A;
+            --moroccan-red: #C1272D;
+            --moroccan-gold: #F1B82D;
+            --moroccan-green: #2E8B57;
+            --moroccan-white: #F5F5F5;
+            --moroccan-dark: #0A1E30;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: var(--moroccan-white);
+            color: var(--moroccan-dark);
+            overflow: hidden;
+        }
+        
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(135deg, var(--moroccan-blue), var(--moroccan-green));
+            color: white;
+            padding: 12px 0;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+        }
+        
+        .header .subtitle {
+            font-size: 0.8em;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        
+        .ar-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .info-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-top: 4px solid var(--moroccan-red);
+            padding: 20px 15px 15px;
+            box-sizing: border-box;
+            transform: translateY(100%);
+            transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 1001;
+            max-height: 50vh;
+            overflow-y: auto;
+            border-radius: 25px 25px 0 0;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.15);
+        }
+        
+        .info-panel.active {
+            transform: translateY(0);
+        }
+        
+        .info-panel h2 {
+            color: var(--moroccan-blue);
+            margin-top: 0;
+            border-bottom: 2px solid var(--moroccan-gold);
+            padding-bottom: 8px;
+            font-size: 1.4em;
+        }
+        
+        .info-panel p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .info-panel .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--moroccan-red);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 1.2em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: transform 0.2s;
+        }
+        
+        .info-panel .close-btn:active {
+            transform: scale(0.9);
+        }
+        
+        .permission-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .permission-content {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.3);
+            border: 2px solid var(--moroccan-gold);
+        }
+        
+        .permission-content h2 {
+            color: var(--moroccan-blue);
+            margin-top: 0;
+        }
+        
+        .permission-content p {
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        .permission-btn {
+            background: var(--moroccan-blue);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        .permission-btn:hover {
+            background: var(--moroccan-green);
+            transform: translateY(-2px);
+        }
+        
+        .permission-btn:active {
+            transform: translateY(0);
+        }
+        
+        .permission-btn.secondary {
+            background: transparent;
+            color: var(--moroccan-blue);
+            border: 2px solid var(--moroccan-blue);
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            z-index: 1002;
+            display: none;
+            text-align: center;
+            border: 2px solid var(--moroccan-gold);
+            max-width: 80%;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 4px solid var(--moroccan-gold);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .location-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: var(--moroccan-blue);
+            color: white;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 1.8em;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        
+        .location-btn:hover {
+            background: var(--moroccan-green);
+            transform: scale(1.1);
+        }
+        
+        .location-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .pattern-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect fill="%231E4E7A" width="50" height="50" x="0" y="0"/><rect fill="%23C1272D" width="50" height="50" x="50" y="0"/><rect fill="%23F1B82D" width="50" height="50" x="0" y="50"/><rect fill="%232E8B57" width="50" height="50" x="50" y="50"/></svg>');
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 999;
+        }
+        
+        .marker {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: var(--moroccan-red);
+            border: 4px solid var(--moroccan-gold);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            display: none;
+            animation: pulse 2s infinite;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(193, 39, 45, 0.6);
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 15px rgba(193, 39, 45, 0.6); }
+            50% { transform: translate(-50%, -50%) scale(1.15); box-shadow: 0 0 25px rgba(193, 39, 45, 0.8); }
+            100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 15px rgba(193, 39, 45, 0.6); }
+        }
+        
+        .nearby-sites {
+            position: fixed;
+            top: 70px;
+            left: 0;
+            width: 100%;
+            background: rgba(30, 78, 122, 0.95);
+            color: white;
+            padding: 15px;
+            box-sizing: border-box;
+            z-index: 1000;
+            display: none;
+            border-bottom: 3px solid var(--moroccan-gold);
+        }
+        
+        .nearby-sites h3 {
+            margin: 0 0 12px 0;
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .site-list {
+            display: flex;
+            overflow-x: auto;
+            gap: 12px;
+            padding-bottom: 8px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--moroccan-gold) transparent;
+        }
+        
+        .site-list::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .site-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .site-list::-webkit-scrollbar-thumb {
+            background-color: var(--moroccan-gold);
+            border-radius: 6px;
+        }
+        
+        .site-item {
+            background: rgba(255,255,255,0.15);
+            padding: 10px 16px;
+            border-radius: 25px;
+            white-space: nowrap;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+            flex-shrink: 0;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .site-item:hover {
+            background: var(--moroccan-gold);
+            color: var(--moroccan-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        .site-item:active {
+            transform: translateY(0);
+        }
+        
+        .camera-permission {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 30px;
+            z-index: 1000;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        .camera-permission-btn {
+            background: var(--moroccan-gold);
+            color: var(--moroccan-blue);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(193, 39, 45, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1002;
+            display: none;
+            max-width: 80%;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        /* New styles for enhanced AR content */
+        .ar-content {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 15px;
+            max-width: 300px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            border: 2px solid var(--moroccan-gold);
+            transform: translate(-50%, -50%);
+            z-index: 1001;
+            display: none;
+        }
+        
+        .ar-content h3 {
+            color: var(--moroccan-blue);
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+        
+        .ar-content img {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+        }
+        
+        .ar-content .ar-close {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--moroccan-red);
+            color: white;
+            border: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .recognition-status {
+            position: fixed;
+            top: 70px;
+            right: 15px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            z-index: 1000;
+            font-size: 0.9em;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="pattern-overlay"></div>
+    <div class="header">
+        <h1>Moroccan Heritage AR Guide</h1>
+        <div class="subtitle">Explore Morocco's landmarks in augmented reality</div>
+    </div>
+
+    <div class="permission-modal" id="permissionModal">
+        <div class="permission-content">
+            <h2>Welcome to Moroccan Heritage AR</h2>
+            <p>To recognize Moroccan landmarks and provide AR information, we need access to your device's camera. Location services help suggest nearby sites.</p>
+            <button class="permission-btn" id="grantPermissionBtn">Allow Access</button>
+            <button class="permission-btn secondary" id="limitedAccessBtn">Continue with Limited Access</button>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <div id="loadingText">Loading historical data...</div>
+    </div>
+
+    <div class="error-message" id="errorMessage"></div>
+
+    <div class="nearby-sites" id="nearbySites">
+        <h3>Nearby Heritage Sites</h3>
+        <div class="site-list" id="siteList"></div>
+    </div>
+
+    <div class="recognition-status" id="recognitionStatus">
+        Analyzing camera feed...
+    </div>
+
+    <div class="ar-container">
+        <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false" style="display: none" id="arScene">
+            <a-camera gps-camera rotation-reader></a-camera>
+            
+            <!-- Marker-based AR for specific landmarks -->
+            <a-marker type="pattern" preset="custom" url="assets/patterns/hassan-tower.patt">
+                <a-entity position="0 0 0" scale="0.5 0.5 0.5" gltf-model="assets/models/hassan-tower.glb"></a-entity>
+                <a-text value="Hassan Tower" position="0 1.5 0" color="#F1B82D" align="center"></a-text>
+            </a-marker>
+            
+            <a-marker type="pattern" preset="custom" url="assets/patterns/koutoubia.patt">
+                <a-entity position="0 0 0" scale="0.5 0.5 0.5" gltf-model="assets/models/koutoubia.glb"></a-entity>
+                <a-text value="Koutoubia Mosque" position="0 1.5 0" color="#F1B82D" align="center"></a-text>
+            </a-marker>
+            
+            <!-- Image recognition area -->
+            <a-entity id="imageRecognitionArea"></a-entity>
+        </a-scene>
+        
+        <!-- Canvas for image processing -->
+        <canvas id="processingCanvas" style="display: none;"></canvas>
+    </div>
+
+    <div class="ar-content" id="arContent">
+        <button class="ar-close" id="arCloseBtn">×</button>
+        <h3 id="arTitle">Site Name</h3>
+        <img id="arImage" src="" alt="Site Image">
+        <div id="arDescription">Loading information...</div>
+    </div>
+
+    <div class="info-panel" id="infoPanel">
+        <button class="close-btn" id="closeBtn">×</button>
+        <h2 id="siteTitle">Site Name</h2>
+        <div id="siteContent">
+            <p>Loading information about this heritage site...</p>
+        </div>
+    </div>
+
+    <div class="camera-permission" id="cameraPermissionPrompt">
+        The app needs camera access for AR features
+        <button class="camera-permission-btn" id="cameraPermissionBtn">Enable Camera</button>
+    </div>
+
+    <button class="location-btn" id="locationBtn">📍</button>
+
+    <script>
+        // Enhanced Moroccan heritage sites database
+        const heritageSites = {
+            "Hassan Tower": {
+                position: { lat: 34.022351, lng: -6.822166 },
+                content: `
+                    <div class="site-details">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Tour_Hassan.jpg/800px-Tour_Hassan.jpg" alt="Hassan Tower" style="width:100%; border-radius:8px; margin-bottom:15px;">
+                        <p><strong>Location:</strong> Rabat, Morocco</p>
+                        <p><strong>Built:</strong> 1195-1199 CE</p>
+                        <p><strong>Architectural Style:</strong> Almohad</p>
+                        <p>The Hassan Tower is the minaret of an incomplete mosque in Rabat. Commissioned by Abu Yusuf Yaqub al-Mansur, the Almohad ruler who intended it to be the largest minaret in the world along with the mosque, the largest in the western Muslim world.</p>
+                        <p>The tower stands 44 meters (140 ft) high, about half of its intended 86 meters (260 ft). The mosque's construction was abandoned after the death of al-Mansour in 1199.</p>
+                        <p><strong>Visiting Hours:</strong> 9:00 AM - 5:00 PM daily</p>
+                        <p><strong>Entrance Fee:</strong> 20 MAD (approx. $2)</p>
+                    </div>
+                `,
+                image: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7d/Tour_Hassan.jpg/800px-Tour_Hassan.jpg",
+                features: ["minaret", "almohad", "unfinished", "square", "red sandstone"],
+                keywords: ["rabat", "tower", "12th century", "islamic architecture"]
+            },
+            "Chellah": {
+                position: { lat: 34.005833, lng: -6.823056 },
+                content: `
+                    <div class="site-details">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Chellah_2018.jpg/800px-Chellah_2018.jpg" alt="Chellah" style="width:100%; border-radius:8px; margin-bottom:15px;">
+                        <p><strong>Location:</strong> Rabat, Morocco</p>
+                        <p><strong>Established:</strong> Phoenician settlement (3rd century BCE), Roman city (1st century CE), Merinid necropolis (14th century)</p>
+                        <p>Chellah is a medieval fortified Muslim necropolis with ancient Roman ruins, located in Rabat. The Phoenicians established a trading emporium here, and later the Romans built the city of Sala Colonia.</p>
+                        <p>The Merinids built a necropolis over the Roman ruins in the 14th century. Today it's known for its storks' nests and hosts an annual jazz festival.</p>
+                        <p><strong>Highlights:</strong> Roman ruins, Islamic architecture, gardens, storks</p>
+                        <p><strong>Visiting Hours:</strong> 8:30 AM - 6:30 PM daily</p>
+                        <p><strong>Entrance Fee:</strong> 10 MAD (approx. $1)</p>
+                    </div>
+                `,
+                image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/Chellah_2018.jpg/800px-Chellah_2018.jpg",
+                features: ["necropolis", "roman", "merinid", "fortified", "gardens"],
+                keywords: ["rabat", "ruins", "archaeological site", "storks"]
+            },
+            "Kasbah of the Udayas": {
+                position: { lat: 34.028611, lng: -6.8375 },
+                content: `
+                    <div class="site-details">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Kasbah_des_Oudaias_%28Rabat%29.jpg/800px-Kasbah_des_Oudaias_%28Rabat%29.jpg" alt="Kasbah of the Udayas" style="width:100%; border-radius:8px; margin-bottom:15px;">
+                        <p><strong>Location:</strong> Rabat, Morocco</p>
+                        <p><strong>Built:</strong> 12th century (Almohad period)</p>
+                        <p>The Kasbah of the Udayas is a fortress located at the mouth of the Bou Regreg river opposite Salé. It was built during the reign of the Almohads and reconstructed in the 18th century.</p>
+                        <p>The kasbah features narrow blue-and-white streets reminiscent of Chefchaouen, an Andalusian garden, and a museum of Moroccan arts. It offers spectacular views of the Atlantic Ocean and the neighboring city of Salé.</p>
+                        <p><strong>Highlights:</strong> Blue-and-white streets, Andalusian Garden, Oudaya Museum, ocean views</p>
+                        <p><strong>Visiting Hours:</strong> 24 hours (museum 9:00 AM - 5:00 PM)</p>
+                        <p><strong>Entrance Fee:</strong> Free (museum 20 MAD)</p>
+                    </div>
+                `,
+                image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/Kasbah_des_Oudaias_%28Rabat%29.jpg/800px-Kasbah_des_Oudaias_%28Rabat%29.jpg",
+                features: ["kasbah", "fortress", "blue walls", "andalusian", "ocean view"],
+                keywords: ["rabat", "almohad", "medina", "historic district"]
+            },
+            "Koutoubia Mosque": {
+                position: { lat: 31.623889, lng: -7.993333 },
+                content: `
+                    <div class="site-details">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Koutoubia_Mosque_%281%29.jpg/800px-Koutoubia_Mosque_%281%29.jpg" alt="Koutoubia Mosque" style="width:100%; border-radius:8px; margin-bottom:15px;">
+                        <p><strong>Location:</strong> Marrakech, Morocco</p>
+                        <p><strong>Built:</strong> 1158-1195 CE</p>
+                        <p><strong>Architectural Style:</strong> Almohad</p>
+                        <p>The Koutoubia Mosque is the largest mosque in Marrakech. The mosque's name comes from the Arabic for 'booksellers' (al-Koutoubiyyin), as the area historically hosted manuscript sellers.</p>
+                        <p>The minaret stands 77 meters (253 ft) tall and is decorated with varying geometric arch motifs. Its design influenced other structures including the Giralda of Seville and the Hassan Tower of Rabat.</p>
+                        <p><strong>Note:</strong> Non-Muslims may not enter the mosque but can admire its exterior architecture.</p>
+                        <p><strong>Best View:</strong> From the adjacent square, especially at sunset</p>
+                    </div>
+                `,
+                image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Koutoubia_Mosque_%281%29.jpg/800px-Koutoubia_Mosque_%281%29.jpg",
+                features: ["mosque", "minaret", "almohad", "landmark", "symmetrical"],
+                keywords: ["marrakech", "12th century", "islamic architecture", "iconic"]
+            },
+            "Bahia Palace": {
+                position: { lat: 31.618611, lng: -7.971389 },
+                content: `
+                    <div class="site-details">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Bahia_Palace_in_Marrakech.jpg/800px-Bahia_Palace_in_Marrakech.jpg" alt="Bahia Palace" style="width:100%; border-radius:8px; margin-bottom:15px;">
+                        <p><strong>Location:</strong> Marrakech, Morocco</p>
+                        <p><strong>Built:</strong> Late 19th century</p>
+                        <p><strong>Architectural Style:</strong> Moroccan, Islamic</p>
+                        <p>The Bahia Palace was built in the late 19th century by Si Moussa, grand vizier of Sultan Hassan I, and later expanded by his son Ba Ahmed. The name means "brilliance".</p>
+                        <p>The palace contains a 2-acre garden with rooms opening onto courtyards. It showcases the best of Moroccan craftsmanship with intricate zellij tilework, carved cedar ceilings, and stucco decoration.</p>
+                        <p><strong>Highlights:</strong> Grand Court, marble courtyard, private apartments, gardens</p>
+                        <p><strong>Visiting Hours:</strong> 9:00 AM - 4:30 PM daily</p>
+                        <p><strong>Entrance Fee:</strong> 70 MAD (approx. $7)</p>
+                    </div>
+                `,
+                image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Bahia_Palace_in_Marrakech.jpg/800px-Bahia_Palace_in_Marrakech.jpg",
+                features: ["palace", "19th century", "garden", "courtyards", "zellij"],
+                keywords: ["marrakech", "vizier", "moorish", "architecture"]
+            },
+            "Ait Ben Haddou": {
+                position: { lat: 31.049722, lng: -7.130833 },
+                content: `
+                    <div class="site-details">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/A%C3%AFt_Benhaddou_-_General_view.jpg/800px-A%C3%AFt_Benhaddou_-_General_view.jpg" alt="Ait Ben Haddou" style="width:100%; border-radius:8px; margin-bottom:15px;">
+                        <p><strong>Location:</strong> Ouarzazate Province, Morocco</p>
+                        <p><strong>Established:</strong> 17th century</p>
+                        <p><strong>Type:</strong> Ksar (fortified village)</p>
+                        <p>Ait Ben Haddou is a striking example of southern Moroccan architecture. This UNESCO World Heritage Site is made up of earthen buildings surrounded by high walls reinforced with corner towers.</p>
+                        <p>The site has been used as a filming location for many movies including "Gladiator", "Lawrence of Arabia", and "Game of Thrones". It's one of Morocco's most famous ksour along the ancient caravan route.</p>
+                        <p><strong>Highlights:</strong> Earthen architecture, film locations, panoramic views</p>
+                        <p><strong>Visiting Hours:</strong> Daylight hours</p>
+                        <p><strong>Entrance Fee:</strong> Free (small fee for some buildings)</p>
+                    </div>
+                `,
+                image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/A%C3%AFt_Benhaddou_-_General_view.jpg/800px-A%C3%AFt_Benhaddou_-_General_view.jpg",
+                features: ["ksar", "earthen", "fortified", "caravan", "unesco"],
+                keywords: ["ouarzazate", "movie location", "berber", "desert"]
+            }
+        };
+
+        // DOM elements
+        const permissionModal = document.getElementById('permissionModal');
+        const grantPermissionBtn = document.getElementById('grantPermissionBtn');
+        const limitedAccessBtn = document.getElementById('limitedAccessBtn');
+        const loadingElement = document.getElementById('loading');
+        const loadingText = document.getElementById('loadingText');
+        const infoPanel = document.getElementById('infoPanel');
+        const closeBtn = document.getElementById('closeBtn');
+        const siteTitle = document.getElementById('siteTitle');
+        const siteContent = document.getElementById('siteContent');
+        const locationBtn = document.getElementById('locationBtn');
+        const nearbySites = document.getElementById('nearbySites');
+        const siteList = document.getElementById('siteList');
+        const cameraPermissionPrompt = document.getElementById('cameraPermissionPrompt');
+        const cameraPermissionBtn = document.getElementById('cameraPermissionBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const arScene = document.getElementById('arScene');
+        const recognitionStatus = document.getElementById('recognitionStatus');
+        const processingCanvas = document.getElementById('processingCanvas');
+        const arContent = document.getElementById('arContent');
+        const arTitle = document.getElementById('arTitle');
+        const arImage = document.getElementById('arImage');
+        const arDescription = document.getElementById('arDescription');
+        const arCloseBtn = document.getElementById('arCloseBtn');
+        
+        // App state
+        let currentPosition = null;
+        let nearbySitesList = [];
+        let hasCameraAccess = false;
+        let hasLocationAccess = false;
+        let videoStream = null;
+        let recognitionInterval = null;
+        let canvasContext = null;
+        
+        // Initialize the app
+        function initApp() {
+            // Check if we've already asked for permissions
+            const permissionsAsked = localStorage.getItem('permissionsAsked');
+            
+            if (!permissionsAsked) {
+                permissionModal.style.display = 'flex';
+            } else {
+                requestPermissions();
+            }
+            
+            setupEventListeners();
+            setupCanvas();
+        }
+        
+        // Set up all event listeners
+        function setupEventListeners() {
+            grantPermissionBtn.addEventListener('click', () => {
+                permissionModal.style.display = 'none';
+                localStorage.setItem('permissionsAsked', 'true');
+                requestCameraAccess();
+                getLocation(true);
+            });
+            
+            limitedAccessBtn.addEventListener('click', () => {
+                permissionModal.style.display = 'none';
+                localStorage.setItem('permissionsAsked', 'true');
+                showError("App functionality will be limited without permissions");
+                getLocation(false);
+            });
+            
+            closeBtn.addEventListener('click', closeInfoPanel);
+            locationBtn.addEventListener('click', () => getLocation(true));
+            cameraPermissionBtn.addEventListener('click', requestCameraAccess);
+            arCloseBtn.addEventListener('click', () => {
+                arContent.style.display = 'none';
+            });
+        }
+        
+        // Set up canvas for image processing
+        function setupCanvas() {
+            processingCanvas.width = 320;
+            processingCanvas.height = 240;
+            canvasContext = processingCanvas.getContext('2d', { willReadFrequently: true });
+        }
+        
+        // Request all necessary permissions
+        function requestPermissions() {
+            requestCameraAccess();
+            getLocation(true);
+        }
+        
+        // Request camera access
+        function requestCameraAccess() {
+            showLoading("Requesting camera access...");
+            
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then((stream) => {
+                    hasCameraAccess = true;
+                    videoStream = stream;
+                    cameraPermissionPrompt.style.display = 'none';
+                    
+                    // Start AR scene
+                    arScene.style.display = 'block';
+                    
+                    // Start image recognition
+                    startImageRecognition();
+                    
+                    hideLoading();
+                })
+                .catch((error) => {
+                    console.error("Camera access denied:", error);
+                    hasCameraAccess = false;
+                    hideLoading();
+                    setTimeout(() => {
+                        cameraPermissionPrompt.style.display = 'block';
+                    }, 1000);
+                });
+        }
+        
+        // Start image recognition process
+        function startImageRecognition() {
+            if (!hasCameraAccess) return;
+            
+            recognitionStatus.style.display = 'block';
+            recognitionStatus.textContent = "Analyzing camera feed...";
+            
+            // In a real app, this would use proper image recognition
+            // For demo, we'll simulate recognition with random matches
+            recognitionInterval = setInterval(() => {
+                simulateImageRecognition();
+            }, 3000);
+        }
+        
+        // Simulate image recognition (in a real app, use TensorFlow.js or similar)
+        function simulateImageRecognition() {
+            if (!videoStream || !canvasContext) return;
+            
+            // Simulate processing
+            recognitionStatus.textContent = "Processing image...";
+            
+            // In a real app, you would:
+            // 1. Capture frame from video stream
+            // 2. Process image to detect features
+            // 3. Compare with known landmarks
+            // 4. Return matches
+            
+            // For demo, randomly show a site if nearby sites are available
+            setTimeout(() => {
+                if (nearbySitesList.length > 0 && Math.random() > 0.5) {
+                    const randomSite = nearbySitesList[Math.floor(Math.random() * nearbySitesList.length)];
+                    const siteData = heritageSites[randomSite.name];
+                    
+                    recognitionStatus.textContent = `Recognized: ${randomSite.name}`;
+                    
+                    // Show AR content
+                    showARContent(randomSite.name, siteData);
+                } else {
+                    recognitionStatus.textContent = "No landmarks recognized";
+                }
+            }, 1000);
+        }
+        
+        // Show AR content for a recognized site
+        function showARContent(siteName, siteData) {
+            arTitle.textContent = siteName;
+            arImage.src = siteData.image || '';
+            arDescription.innerHTML = `
+                <p><strong>Location:</strong> ${siteData.position ? `${siteData.position.lat.toFixed(4)}, ${siteData.position.lng.toFixed(4)}` : 'Unknown'}</p>
+                <p>${siteData.content.substring(0, 150)}...</p>
+                <button onclick="showSiteInfo('${siteName}')" style="background: var(--moroccan-blue); color: white; border: none; padding: 8px 15px; border-radius: 20px; margin-top: 10px; cursor: pointer;">
+                    More Info
+                </button>
+            `;
+            
+            // Position randomly on screen for demo
+            arContent.style.left = `${Math.random() * 60 + 20}%`;
+            arContent.style.top = `${Math.random() * 60 + 20}%`;
+            arContent.style.display = 'block';
+        }
+        
+        // Get current location
+        function getLocation(showError) {
+            showLoading("Detecting your location...");
+            
+            if (!navigator.geolocation) {
+                showError("Geolocation is not supported by this browser. Using default location.");
+                currentPosition = { lat: 34.020882, lng: -6.841650 };
+                findNearbySites();
+                hideLoading();
+                return;
+            }
+
+            if (navigator.permissions && navigator.permissions.query) {
+                navigator.permissions.query({name: 'geolocation'})
+                    .then((permissionStatus) => {
+                        if (permissionStatus.state === 'denied' && showError) {
+                            showError("Location access was previously denied. Please enable it in your browser settings.");
+                            currentPosition = { lat: 34.020882, lng: -6.841650 };
+                            findNearbySites();
+                            hideLoading();
+                            return;
+                        }
+                        requestGeolocation(showError);
+                    })
+                    .catch(() => {
+                        requestGeolocation(showError);
+                    });
+            } else {
+                requestGeolocation(showError);
+            }
+        }
+        
+        function requestGeolocation(showError) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    hasLocationAccess = true;
+                    currentPosition = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    findNearbySites();
+                    hideLoading();
+                },
+                (error) => {
+                    console.error("Error getting location:", error);
+                    hasLocationAccess = false;
+                    if (showError) {
+                        let errorMsg = "Location access was denied. ";
+                        if (error.code === error.PERMISSION_DENIED) {
+                            errorMsg += "Please enable location services in your browser settings.";
+                        } else {
+                            errorMsg += "Could not determine your location. Using default location.";
+                        }
+                        showError(errorMsg);
+                    }
+                    currentPosition = { lat: 34.020882, lng: -6.841650 };
+                    findNearbySites();
+                    hideLoading();
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+        
+        // Show loading indicator with custom text
+        function showLoading(text) {
+            loadingText.textContent = text || "Loading...";
+            loadingElement.style.display = 'block';
+        }
+        
+        // Hide loading indicator
+        function hideLoading() {
+            loadingElement.style.display = 'none';
+        }
+        
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Show info panel with site data
+        function showSiteInfo(siteName) {
+            const site = heritageSites[siteName];
+            if (site) {
+                siteTitle.textContent = siteName;
+                
+                if (site.content) {
+                    siteContent.innerHTML = site.content;
+                    infoPanel.classList.add('active');
+                } else {
+                    siteContent.innerHTML = "<p>Loading detailed information...</p>";
+                    infoPanel.classList.add('active');
+                    fetchSiteData(siteName).then(data => {
+                        siteContent.innerHTML = data.content;
+                        heritageSites[siteName].content = data.content;
+                    });
+                }
+            }
+        }
+        
+        // Close info panel
+        function closeInfoPanel() {
+            infoPanel.classList.remove('active');
+        }
+        
+        // Find sites near current location
+        function findNearbySites() {
+            if (!currentPosition) return;
+            
+            nearbySitesList = [];
+            
+            for (const [name, site] of Object.entries(heritageSites)) {
+                if (!site.position) continue;
+                
+                const distance = calculateDistance(
+                    currentPosition.lat, currentPosition.lng,
+                    site.position.lat, site.position.lng
+                );
+                
+                if (distance < 50) { // Within 50km
+                    nearbySitesList.push({ name, distance });
+                }
+            }
+            
+            nearbySitesList.sort((a, b) => a.distance - b.distance);
+            displayNearbySites();
+        }
+        
+        // Calculate distance between two coordinates in km
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            return R * c;
+        }
+        
+        function deg2rad(deg) {
+            return deg * (Math.PI/180);
+        }
+        
+        // Display nearby sites in the UI
+        function displayNearbySites() {
+            siteList.innerHTML = '';
+            
+            if (nearbySitesList.length === 0) {
+                nearbySites.style.display = 'none';
+                return;
+            }
+            
+            nearbySites.style.display = 'block';
+            
+            nearbySitesList.forEach(site => {
+                const item = document.createElement('div');
+                item.className = 'site-item';
+                item.textContent = `${site.name} (${site.distance.toFixed(1)}km)`;
+                item.addEventListener('click', () => {
+                    showSiteInfo(site.name);
+                });
+                siteList.appendChild(item);
+            });
+        }
+        
+        // Fetch site data from API (simulated)
+        async function fetchSiteData(siteName) {
+            try {
+                showLoading(`Fetching data for ${siteName}...`);
+                
+                // Simulate API call
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve({
+                            content: `<p>Detailed information about ${siteName} from Moroccan tourism databases.</p>
+                                     <p>This would include historical context, architectural details, visiting hours, and cultural significance.</p>`
+                        });
+                        hideLoading();
+                    }, 1500);
+                });
+            } catch (error) {
+                console.error("Error fetching data:", error);
+                hideLoading();
+                return { content: `<p>Could not load information for ${siteName}. Please try again later.</p>` };
+            }
+        }
+        
+        // Clean up when leaving page
+        window.addEventListener('beforeunload', () => {
+            if (recognitionInterval) clearInterval(recognitionInterval);
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+            }
+        });
+        
+        // Make showSiteInfo available globally for AR content button
+        window.showSiteInfo = showSiteInfo;
+        
+        // Start the app
+        initApp();
+    </script>
+</body>
+</html>
