@@ -17,7 +17,7 @@
   <body>
     <a-scene
       embedded
-      arjs="sourceType: webcam; debugUIEnabled: false;"
+      arjs="sourceType: webcam; debugUIEnabled: false; sourceWidth: 1280; sourceHeight: 720; displayWidth: 1280; displayHeight: 720; facingMode: environment;"
       renderer="logarithmicDepthBuffer: true;"
     >
       <!-- AR Marker from GitHub repo -->
@@ -35,6 +35,10 @@
       </a-marker>
 
       <!-- AR camera -->
+      <a-entity camera></a-entity>
+    </a-scene>
+  </body>
+</html>      <!-- AR camera -->
       <a-entity camera></a-entity>
     </a-scene>
   </body>
